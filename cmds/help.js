@@ -29,7 +29,7 @@ module.exports.run = async function({
       for (let i = start; i < Math.min(end, commands.length); i++) {
         helpMessage += `\t${i + 1}.🌠
     ╭─╼━━━━━━━━╾─╮
-ule.exports.config = {
+module.exports.config = {
   name: 'help',
   version: '1.0.0',
   role: 0,
