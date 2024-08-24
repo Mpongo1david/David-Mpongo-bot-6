@@ -1,41 +1,49 @@
 const axios = require('axios');
 
-module.exports = {
-    description: "Ask the GPT4 a question(conversational)",
-    role: "user",
-    no_prefix: true,
-
-    credits: 'https://nemory-project.vercel.app/',
-    cooldown: 8,
-    execute(api, event, args, commands) {
-        if (args.length === 0) {
-            api.sendMessage("Please provide a question.", event.threadID, event.messageID);
-            api.setMessageReaction( ':heart:', event.messageID);
-            return;
-        }
-        
-        const myOten = event.senderID;
-        const question = args.join(" ");
-        const searchMessage = `Looking for an answer for "${question}"...`;
-        api.sendMessage(searchMessage, event.threadID, event.messageID);
- 
- 
-       const apiUrl = `https://ai-1stclass-nemory-project.vercel.app/api/llama?ask=${encodeURIComponent(question)}`;
-       
-
-        axios.get(apiUrl)
-            .then(response => {
-                const data = response.data;
-                const message = data.response || "Sorry, I couldn't understand the question.";
-
-                // sendinsg
-                setTimeout(() => {
-                    api.sendMessage(message, event.threadID, event.messageID);
-                }, 3000);
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                api.sendMessage("Sorry, an error occurred while processing your request.", event.threadID);
-            });
-    }
+module.exports.config = {
+    name: "ai",
+    version: "1.0.0",
+    hasPermission: 0,
+    credits: "api by jerome",//api by jerome
+    description: "Gpt architecture",
+    usePrefix: false,
+    commandCategory: "GPT4",
+    cooldowns: 5,
 };
+
+module.exports.run = async function ({ api, event, args }) {
+    try {
+        const { messageID, messageReply } = event;
+        let prompt = args.join(' ');
+
+        if (messageReply) {
+            const repliedMessage = messageReply.body;
+            prompt = `${repliedMessage} ${prompt}`;
+        }
+
+        if (!prompt) {
+            return api.sendMessage('Please provide a prompt to generate a text response.\nExample: ai What is the meaning of life?', event.threadID, messageID);
+        }
+        api.sendMessage('🔍 Searching for an answer to your question...', event.threadID);
+
+        // Delay
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Adjust the delay time as needed
+
+        const gpt4_api = `https://gpt4withcustommodel.onrender.com/gpt?query=${encodeURIComponent(prompt)}&model=gpt-4-32k-0314`;
+
+        const response = await axios.get(gpt4_api);
+
+        if (response.data && response.data.response) {
+            const generatedText = response.data.response;
+
+            // Ai Answer Here
+            api.sendMessage(`🤖 Ai Answer\n━━━━━━━━━━━━━━━━\n\n𝗔𝗻𝘀𝘄𝗲𝗿: ${generatedText}\n\n━━━━━━━━━━━━━━━━`, event.threadID, messageID);
+        } else {
+            console.error('API response did not contain expected data:', response.data);
+            api.sendMessage(`❌ An error occurred while generating the text response. Please try again later. Response data: ${JSON.stringify(response.data)}`, event.threadID, messageID);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        api.sendMessage(`❌ An error occurred while generating the text response. Please try again later. Error details: ${error.message}`, event.threadID, event.messageID);
+    }
+};￼Enter
